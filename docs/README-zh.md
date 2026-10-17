@@ -1,10 +1,10 @@
-[English](README.md) | [简体中文](README-zh.md) | [繁體中文](README-zh-Hant.md) | [Русский](README-ru.md)
+[English](../README.md) | [简体中文](README-zh.md) | [繁體中文](README-zh-Hant.md) | [Русский](README-ru.md)
 
 # GatewayCrate
 
 **开源、自托管的 AI 网关。**
 
-[![Build Status](https://github.com/hwdsl2/gatewaycrate/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/gatewaycrate/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-litellm-server.svg)](https://hub.docker.com/r/hwdsl2/litellm-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
+[![Build Status](https://github.com/hwdsl2/gatewaycrate/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/gatewaycrate/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-litellm-server.svg)](https://hub.docker.com/r/hwdsl2/litellm-server) &nbsp;[![License: MIT](images/license.svg)](https://opensource.org/licenses/MIT)
 
 通过 GatewayCrate，将应用连接到已配置的云端和本地模型提供商。由 [LiteLLM](https://github.com/BerriAI/litellm) 驱动，提供统一的 OpenAI 兼容 API、自动模型配置和管理工具。项目提供的 PostgreSQL 配置可启用管理界面、虚拟密钥和支出追踪。
 
@@ -20,13 +20,13 @@
 - **模型管理：** 通过辅助脚本（`litellm_manage`）管理模型
 - **自动构建：** 通过 [GitHub Actions](https://github.com/hwdsl2/gatewaycrate/actions) 自动构建和发布
 
-也可作为 [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh.md) 的一部分使用，一条命令即可部署完整的自托管 AI 技术栈。
+也可作为 [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/docs/README-zh.md) 的一部分使用，一条命令即可部署完整的自托管 AI 技术栈。
 
 > 📘 [The Self-Hosted AI Builder’s Guide](https://books2read.com/aiguide?store=amazon) 是一本关于构建、保护和运维自己的私有 AI 技术栈的实用指南。
 
 **另提供：**
 
-- 相关 AI 服务：[ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/README-zh.md)、[SpeakCrate](https://github.com/hwdsl2/speakcrate/blob/main/README-zh.md)、[EmbedCrate](https://github.com/hwdsl2/embedcrate/blob/main/README-zh.md)、[InferCrate](https://github.com/hwdsl2/infercrate/blob/main/README-zh.md)、[ParseCrate](https://github.com/hwdsl2/parsecrate/blob/main/README-zh.md)、[UplinkCrate](https://github.com/hwdsl2/uplinkcrate/blob/main/README-zh.md)
+- 相关 AI 服务：[ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/docs/README-zh.md)、[SpeakCrate](https://github.com/hwdsl2/speakcrate/blob/main/docs/README-zh.md)、[EmbedCrate](https://github.com/hwdsl2/embedcrate/blob/main/docs/README-zh.md)、[InferCrate](https://github.com/hwdsl2/infercrate/blob/main/docs/README-zh.md)、[ParseCrate](https://github.com/hwdsl2/parsecrate/blob/main/docs/README-zh.md)、[UplinkCrate](https://github.com/hwdsl2/uplinkcrate/blob/main/docs/README-zh.md)
 
 ## 快速开始
 
@@ -87,9 +87,9 @@ curl http://localhost:4000/v1/chat/completions \
 
 - [Setup IPsec VPN](https://github.com/hwdsl2/setup-ipsec-vpn/blob/master/README-zh.md)
 - [Docker 上的 IPsec VPN](https://github.com/hwdsl2/docker-ipsec-vpn-server/blob/master/README-zh.md)
-- [WireGuard](https://github.com/hwdsl2/docker-wireguard/blob/main/README-zh.md)
-- [OpenVPN](https://github.com/hwdsl2/docker-openvpn/blob/main/README-zh.md)
-- [Headscale](https://github.com/hwdsl2/docker-headscale/blob/main/README-zh.md)
+- [WireGuard](https://github.com/hwdsl2/docker-wireguard/blob/main/docs/README-zh.md)
+- [OpenVPN](https://github.com/hwdsl2/docker-openvpn/blob/main/docs/README-zh.md)
+- [Headscale](https://github.com/hwdsl2/docker-headscale/blob/main/docs/README-zh.md)
 
 </details>
 
@@ -124,7 +124,7 @@ docker image tag quay.io/hwdsl2/litellm-server hwdsl2/litellm-server
 
 所有变量均为可选。如未设置 `LITELLM_MASTER_KEY`，主 API 密钥将在首次启动时自动生成。
 
-此 Docker 镜像使用以下变量，可在 `env` 文件中声明（参见[示例](litellm.env.example)）：
+此 Docker 镜像使用以下变量，可在 `env` 文件中声明（参见[示例](../litellm.env.example)）：
 
 | 变量 | 说明 | 默认值 |
 |---|---|---|
@@ -137,7 +137,7 @@ docker image tag quay.io/hwdsl2/litellm-server hwdsl2/litellm-server
 | `LITELLM_GROQ_API_KEY` | Groq API 密钥 — 自动添加 `llama-3.3-70b` | *(未设置)* |
 | `LITELLM_GEMINI_API_KEY` | Google Gemini API 密钥 — 自动添加 `gemini-2.0-flash` | *(未设置)* |
 | `LITELLM_OLLAMA_BASE_URL` | Ollama 基础 URL — 确保存在 `ollama/llama3.2:3b` 和 `ollama-chat/llama3.2:3b` | *(未设置)* |
-| `LITELLM_OLLAMA_API_KEY` | Ollama 端点的 API 密钥（在 [self-hosted-ai-stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh.md) 中通过共享卷自动读取） | *(未设置)* |
+| `LITELLM_OLLAMA_API_KEY` | Ollama 端点的 API 密钥（在 [self-hosted-ai-stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/docs/README-zh.md) 中通过共享卷自动读取） | *(未设置)* |
 | `LITELLM_DATABASE_URL` | PostgreSQL URL — 启用虚拟密钥管理 | *(未设置)* |
 | `LITELLM_POSTGRES_PASSWORD_FILE` | 包含 Compose PostgreSQL 密码的文件；仅在未设置 `LITELLM_DATABASE_URL` 时使用 | *(未设置)* |
 | `LITELLM_MCP_URL` | 兼容的 MCP HTTP 端点 URL（例如 UplinkCrate），每次启动时自动接入 | *(未设置)* |
@@ -482,7 +482,7 @@ docker rm -f litellm
 
 LiteLLM 可作为更广泛的自托管 AI 设置中的 AI 网关。
 
-如需完整和轻量级 Docker Compose 技术栈、手动 `docker run` 示例，以及结合 SpeakCrate、EmbedCrate、GatewayCrate、InferCrate、ParseCrate 和 UplinkCrate 的语音/RAG/MCP 流水线示例，请参阅 [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh.md)。
+如需完整和轻量级 Docker Compose 技术栈、手动 `docker run` 示例，以及结合 SpeakCrate、EmbedCrate、GatewayCrate、InferCrate、ParseCrate 和 UplinkCrate 的语音/RAG/MCP 流水线示例，请参阅 [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/docs/README-zh.md)。
 
 ## 使用计数
 
