@@ -12,6 +12,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/opt/venv/bin:$PATH"
 
+# Use TOML so Prisma receives a list with Pydantic 2.
 RUN set -x \
     && apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl wget libatomic1 \
@@ -20,6 +21,11 @@ RUN set -x \
     && python3 -m venv /opt/venv \
     && pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir --uploaded-prior-to P7D "litellm[proxy]" prisma \
+    && printf '%s\n' \
+         '[tool.prisma]' \
+         'nodeenv_extra_args = ["--node=lts"]' \
+         > /opt/src/pyproject.toml \
+    && python3 -c 'from prisma import config; assert config.nodeenv_extra_args == ["--node=lts"], "Prisma must use Node.js LTS"' \
     && LITELLM_SCHEMA=$(/opt/venv/bin/python3 -c 'import litellm, os; print(os.path.join(os.path.dirname(litellm.__file__), "proxy", "schema.prisma"))') \
     && DATABASE_URL="postgresql://dummy:dummy@localhost/dummy" \
        prisma generate --schema "$LITELLM_SCHEMA" \
