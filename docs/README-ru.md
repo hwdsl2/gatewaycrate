@@ -24,12 +24,6 @@
 
 > 📘 **The Self-Hosted AI Builder’s Guide** ([электронная книга](https://books2read.com/aiguide?store=amazon) · [книга в мягкой обложке](https://books2read.com/aiguide?store=amazon-paperback&format=PAPERBACK)): практическое руководство по созданию, защите и эксплуатации собственного приватного ИИ-стека.
 
-**Связанные AI-сервисы:**
-
-- **Речь:** [ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/docs/README-ru.md), [SpeakCrate](https://github.com/hwdsl2/speakcrate/blob/main/docs/README-ru.md)
-- **Документы и поиск:** [ParseCrate](https://github.com/hwdsl2/parsecrate/blob/main/docs/README-ru.md), [EmbedCrate](https://github.com/hwdsl2/embedcrate/blob/main/docs/README-ru.md)
-- **Модели и шлюзы:** [InferCrate](https://github.com/hwdsl2/infercrate/blob/main/docs/README-ru.md), [UplinkCrate](https://github.com/hwdsl2/uplinkcrate/blob/main/docs/README-ru.md)
-
 ## Быстрый старт
 
 **Шаг 1.** Запустите GatewayCrate:
@@ -485,6 +479,12 @@ docker rm -f litellm
 LiteLLM можно использовать как AI-шлюз в более широком self-hosted AI-стеке.
 
 Готовые полные и облегчённые стеки Docker Compose, примеры ручного запуска через `docker run`, а также примеры голосовых, RAG- и MCP-конвейеров с SpeakCrate, EmbedCrate, GatewayCrate, InferCrate, ParseCrate и UplinkCrate см. в [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/docs/README-ru.md).
+
+**Связанные AI-сервисы:**
+
+- **Речь:** [ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/docs/README-ru.md), [SpeakCrate](https://github.com/hwdsl2/speakcrate/blob/main/docs/README-ru.md)
+- **Документы и поиск:** [ParseCrate](https://github.com/hwdsl2/parsecrate/blob/main/docs/README-ru.md), [EmbedCrate](https://github.com/hwdsl2/embedcrate/blob/main/docs/README-ru.md)
+- **Модели и шлюзы:** [InferCrate](https://github.com/hwdsl2/infercrate/blob/main/docs/README-ru.md), [UplinkCrate](https://github.com/hwdsl2/uplinkcrate/blob/main/docs/README-ru.md)
 
 ## Счётчики использования
 
