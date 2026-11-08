@@ -2,6 +2,15 @@
 
 Notable changes to GatewayCrate are documented here.
 
+## 2026-11-05
+
+Release: `2026.11.1`
+
+### Fixed
+
+- Fixed Prisma bootstrap during Docker image builds by selecting Node.js LTS
+  with configuration compatible with Pydantic 2.
+
 ## 2026-10-24
 
 Release: `2026.10.1`
