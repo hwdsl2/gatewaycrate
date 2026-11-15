@@ -86,6 +86,10 @@ check_container() {
 }
 
 load_config() {
+  # Exec retains the container env even if the mounted startup env unset it.
+  if [ -f "${MASTER_KEY_FILE}.file-source" ]; then
+    LITELLM_MASTER_KEY=$(cat "$MASTER_KEY_FILE") || exiterr "Cannot read the active master key."
+  fi
   # Load port
   if [ -z "$LITELLM_PORT" ]; then
     if [ -f "$PORT_FILE" ]; then

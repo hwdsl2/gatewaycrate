@@ -69,35 +69,114 @@ if [ ! -f "/.dockerenv" ] && [ ! -f "/run/.containerenv" ] \
   exiterr "This script ONLY runs in a container (e.g. Docker, Podman)."
 fi
 
+# Resolve explicit external inputs before normalization or persistent writes.
+# Begin secret-file helpers
+# Optional external inputs only. Legacy saved-key readers remain in the caller.
+
+secret_error() { printf 'Error: %s\n' "$1" >&2; exit 1; }
+
+secret_resolve() {
+  local name="$1" kind="$2" file_name="${1}_FILE" path value LC_ALL=C header_pattern='^[ -~]+$'
+  printf -v "${name}_FROM_FILE" '%s' ''
+  [[ ${!file_name+x} ]] || return 0
+  [[ ! ${!name+x} ]] || secret_error "$file_name conflicts with $name (even when empty)."
+  path=${!file_name}
+  [[ -n "$path" ]] || secret_error "$file_name must name a nonempty file path."
+  [[ -f "$path" && -r "$path" && -s "$path" ]] \
+    || secret_error "$file_name must name a readable, nonempty regular file."
+  # read retains terminal newlines; a successful NUL-delimited read detects NUL
+  # before Bash can silently discard it. Never source or evaluate secret bytes.
+  if IFS= read -r -d '' value < "$path"; then
+    secret_error "$file_name contains a NUL byte."
+  fi
+  while [[ "$value" == *$'\n' ]]; do
+    value=${value%$'\n'}
+    value=${value%$'\r'}
+  done
+  [[ -n "$value" && "$value" != *[[:cntrl:]]* ]] \
+    || secret_error "$file_name must contain one nonempty line without control characters."
+  # Bearer transports use RFC 6750 b64token; passwords and URLs are text.
+  if [[ "$kind" == bearer && ! "$value" =~ ^[A-Za-z0-9._~+/-]+=*$ ]]; then
+    secret_error "$file_name must contain a single HTTP bearer token."
+  fi
+  if [[ "$kind" == header && ( ! "$value" =~ $header_pattern || "$value" == ' '* || "$value" == *' ' ) ]]; then
+    secret_error "$file_name must contain ASCII header data without leading or trailing spaces."
+  fi
+  printf -v "$name" '%s' "$value"
+  printf -v "${name}_FROM_FILE" '%s' 1
+  export "${name?}"
+}
+
+# Record source selection only; the primary key already uses its legacy file.
+secret_record_source() {
+  local marker="$1" enabled="$2" temporary
+  if [[ "$enabled" != 1 ]]; then
+    rm -f -- "$marker" || secret_error "Cannot clear credential source marker."
+    return 0
+  fi
+  [[ ! -d "$marker" ]] || secret_error "Credential source marker must be a file."
+  temporary=$(mktemp "${marker}.XXXXXX") || secret_error "Cannot prepare credential source marker."
+  if ! printf '%s' 1 > "$temporary" || ! mv -f -- "$temporary" "$marker"; then
+    rm -f -- "$temporary"
+    secret_error "Cannot record credential source."
+  fi
+}
+# End secret-file helpers
+
+secret_resolve LITELLM_MASTER_KEY bearer
+secret_resolve LITELLM_OPENAI_API_KEY bearer
+secret_resolve LITELLM_ANTHROPIC_API_KEY bearer
+secret_resolve LITELLM_GROQ_API_KEY bearer
+secret_resolve LITELLM_GEMINI_API_KEY bearer
+secret_resolve LITELLM_OLLAMA_API_KEY bearer
+secret_resolve LITELLM_MCP_API_KEY bearer
+secret_resolve LITELLM_DATABASE_URL text
+
 # Read and sanitize environment variables
 LITELLM_PORT=$(nospaces "$LITELLM_PORT")
 LITELLM_PORT=$(noquotes "$LITELLM_PORT")
-LITELLM_MASTER_KEY=$(nospaces "$LITELLM_MASTER_KEY")
-LITELLM_MASTER_KEY=$(noquotes "$LITELLM_MASTER_KEY")
+if [ "${LITELLM_MASTER_KEY_FROM_FILE:-}" != 1 ]; then
+  LITELLM_MASTER_KEY=$(nospaces "$LITELLM_MASTER_KEY")
+  LITELLM_MASTER_KEY=$(noquotes "$LITELLM_MASTER_KEY")
+fi
 LITELLM_LOG_LEVEL=$(nospaces "$LITELLM_LOG_LEVEL")
 LITELLM_LOG_LEVEL=$(noquotes "$LITELLM_LOG_LEVEL")
-LITELLM_OPENAI_API_KEY=$(nospaces "$LITELLM_OPENAI_API_KEY")
-LITELLM_OPENAI_API_KEY=$(noquotes "$LITELLM_OPENAI_API_KEY")
-LITELLM_ANTHROPIC_API_KEY=$(nospaces "$LITELLM_ANTHROPIC_API_KEY")
-LITELLM_ANTHROPIC_API_KEY=$(noquotes "$LITELLM_ANTHROPIC_API_KEY")
-LITELLM_GROQ_API_KEY=$(nospaces "$LITELLM_GROQ_API_KEY")
-LITELLM_GROQ_API_KEY=$(noquotes "$LITELLM_GROQ_API_KEY")
-LITELLM_GEMINI_API_KEY=$(nospaces "$LITELLM_GEMINI_API_KEY")
-LITELLM_GEMINI_API_KEY=$(noquotes "$LITELLM_GEMINI_API_KEY")
+if [ "${LITELLM_OPENAI_API_KEY_FROM_FILE:-}" != 1 ]; then
+  LITELLM_OPENAI_API_KEY=$(nospaces "$LITELLM_OPENAI_API_KEY")
+  LITELLM_OPENAI_API_KEY=$(noquotes "$LITELLM_OPENAI_API_KEY")
+fi
+if [ "${LITELLM_ANTHROPIC_API_KEY_FROM_FILE:-}" != 1 ]; then
+  LITELLM_ANTHROPIC_API_KEY=$(nospaces "$LITELLM_ANTHROPIC_API_KEY")
+  LITELLM_ANTHROPIC_API_KEY=$(noquotes "$LITELLM_ANTHROPIC_API_KEY")
+fi
+if [ "${LITELLM_GROQ_API_KEY_FROM_FILE:-}" != 1 ]; then
+  LITELLM_GROQ_API_KEY=$(nospaces "$LITELLM_GROQ_API_KEY")
+  LITELLM_GROQ_API_KEY=$(noquotes "$LITELLM_GROQ_API_KEY")
+fi
+if [ "${LITELLM_GEMINI_API_KEY_FROM_FILE:-}" != 1 ]; then
+  LITELLM_GEMINI_API_KEY=$(nospaces "$LITELLM_GEMINI_API_KEY")
+  LITELLM_GEMINI_API_KEY=$(noquotes "$LITELLM_GEMINI_API_KEY")
+fi
 LITELLM_OLLAMA_BASE_URL=$(nospaces "$LITELLM_OLLAMA_BASE_URL")
 LITELLM_OLLAMA_BASE_URL=$(noquotes "$LITELLM_OLLAMA_BASE_URL")
-LITELLM_OLLAMA_API_KEY=$(nospaces "$LITELLM_OLLAMA_API_KEY")
-LITELLM_OLLAMA_API_KEY=$(noquotes "$LITELLM_OLLAMA_API_KEY")
-LITELLM_DATABASE_URL=$(nospaces "$LITELLM_DATABASE_URL")
-LITELLM_DATABASE_URL=$(noquotes "$LITELLM_DATABASE_URL")
+if [ "${LITELLM_OLLAMA_API_KEY_FROM_FILE:-}" != 1 ]; then
+  LITELLM_OLLAMA_API_KEY=$(nospaces "$LITELLM_OLLAMA_API_KEY")
+  LITELLM_OLLAMA_API_KEY=$(noquotes "$LITELLM_OLLAMA_API_KEY")
+fi
+if [ "${LITELLM_DATABASE_URL_FROM_FILE:-}" != 1 ]; then
+  LITELLM_DATABASE_URL=$(nospaces "$LITELLM_DATABASE_URL")
+  LITELLM_DATABASE_URL=$(noquotes "$LITELLM_DATABASE_URL")
+fi
 LITELLM_POSTGRES_PASSWORD_FILE=$(nospaces "$LITELLM_POSTGRES_PASSWORD_FILE")
 LITELLM_POSTGRES_PASSWORD_FILE=$(noquotes "$LITELLM_POSTGRES_PASSWORD_FILE")
 LITELLM_HOST=$(nospaces "$LITELLM_HOST")
 LITELLM_HOST=$(noquotes "$LITELLM_HOST")
 LITELLM_MCP_URL=$(nospaces "$LITELLM_MCP_URL")
 LITELLM_MCP_URL=$(noquotes "$LITELLM_MCP_URL")
-LITELLM_MCP_API_KEY=$(nospaces "$LITELLM_MCP_API_KEY")
-LITELLM_MCP_API_KEY=$(noquotes "$LITELLM_MCP_API_KEY")
+if [ "${LITELLM_MCP_API_KEY_FROM_FILE:-}" != 1 ]; then
+  LITELLM_MCP_API_KEY=$(nospaces "$LITELLM_MCP_API_KEY")
+  LITELLM_MCP_API_KEY=$(noquotes "$LITELLM_MCP_API_KEY")
+fi
 
 # Apply defaults
 [ -z "$LITELLM_PORT" ]      && LITELLM_PORT=4000
@@ -250,6 +329,8 @@ else
     chmod 600 "$MASTER_KEY_FILE"
   fi
 fi
+
+secret_record_source "${MASTER_KEY_FILE}.file-source" "${LITELLM_MASTER_KEY_FROM_FILE:-}"
 
 # Export master key so LiteLLM reads it directly from the environment
 export LITELLM_MASTER_KEY="$master_key"
