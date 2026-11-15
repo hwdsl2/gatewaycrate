@@ -58,6 +58,8 @@ jobs:
           set -x
 
           docker build -t litellm-test .
+          python3 .github/workflows/tests/check_secret_mounts.py docker litellm-test
+          docker run --rm --entrypoint python3 -v "$GITHUB_WORKSPACE:/wrapper:ro" litellm-test -B -I /wrapper/.github/workflows/tests/test_litellm_secret_integration.py -v
 
           cat > /tmp/litellm-compose-ci.yml <<'EOF'
           services:
@@ -146,7 +148,7 @@ jobs:
     needs: compose_config
     strategy:
       matrix:
-        test_id: [no-env, with-env, with-master-key, with-mcp, with-shared-vol, with-litellm-shared]
+        test_id: [no-env, with-env, with-master-key, with-file, with-mcp, with-shared-vol, with-litellm-shared]
       fail-fast: false
     env:
       TEST_ID: ${{ matrix.test_id }}
@@ -194,6 +196,21 @@ jobs:
               -e LITELLM_DISABLE_USAGE_COUNTS=1 \
               -v litellm-test-data:/etc/litellm \
               -e LITELLM_MASTER_KEY=sk-test-master-key \
+              -p 4000:4000/tcp \
+              -d litellm-test
+          elif [ "$TEST_ID" = "with-file" ]; then
+            secret_test_dir=$(mktemp -d)
+            trap 'rm -rf -- "$secret_test_dir"' EXIT
+            printf '%s\r\n' sk-test-master-key > "$secret_test_dir/api-key"
+            printf '%s\n' 'unset LITELLM_MASTER_KEY' LITELLM_MASTER_KEY_FILE=/run/secrets/api-key > "$secret_test_dir/service.env"
+            docker run \
+              --name "$TEST_ID" \
+              --restart=always \
+              -e LITELLM_DISABLE_USAGE_COUNTS=1 \
+              -e LITELLM_MASTER_KEY=sk-synthetic-stale-container-key \
+              -v litellm-test-data:/etc/litellm \
+              -v "$secret_test_dir/api-key:/run/secrets/api-key:ro" \
+              -v "$secret_test_dir/service.env:/litellm.env:ro" \
               -p 4000:4000/tcp \
               -d litellm-test
           elif [ "$TEST_ID" = "with-mcp" ]; then
@@ -265,8 +282,12 @@ jobs:
           # Capture master key for API tests
           MASTER_KEY=$(docker exec "$TEST_ID" cat /etc/litellm/.master_key)
 
+          if [ "$TEST_ID" = "with-file" ]; then
+            [ "$(docker exec "$TEST_ID" litellm_manage --getkey)" = "$MASTER_KEY" ] || exit 1
+          fi
+
           # Verify pre-set master key is used when LITELLM_MASTER_KEY env var was provided
-          if [ "$TEST_ID" = "with-master-key" ]; then
+          if [ "$TEST_ID" = "with-master-key" ] || [ "$TEST_ID" = "with-file" ]; then
             docker exec "$TEST_ID" grep -qF 'sk-test-master-key' /etc/litellm/.master_key \
               || { echo "Pre-set master key not used"; exit 1; }
           fi
@@ -275,6 +296,10 @@ jobs:
           http_code=$(curl -s -o /dev/null -w '%{http_code}' \
             http://127.0.0.1:4000/v1/models 2>/dev/null || true)
           [ "$http_code" = "401" ] || { echo "Expected 401 without key, got $http_code"; exit 1; }
+
+          http_code=$(curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer sk-synthetic-wrong-key' \
+            http://127.0.0.1:4000/v1/models 2>/dev/null || true)
+          [ "$http_code" = "401" ] || { echo "Wrong master key was accepted"; exit 1; }
 
           # Test OpenAI-compatible models endpoint
           docker exec "$TEST_ID" curl -sf http://127.0.0.1:4000/v1/models \
