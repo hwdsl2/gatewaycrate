@@ -1,10 +1,15 @@
 name: build
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
       - '.github/workflows/main.yml'
+      - '.github/workflows/proxy_test.yml'
+      - '.github/workflows/shellcheck.yml'
+      - '.github/workflows/tests/check_proxy_auth.py'
+      - '.github/workflows/tests/test_proxy_auth.py'
       - '.github/workflows/tests/check_secret_mounts.py'
       - '.github/workflows/buildx.yml'
       - '.dockerignore'
