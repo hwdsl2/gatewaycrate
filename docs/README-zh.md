@@ -158,6 +158,26 @@ docker run \
 
 env 文件以绑定挂载方式挂载到容器中，因此每次重启容器时都会读取最新的变量，无需重新创建容器。
 
+<a id="secret-files"></a>
+
+## 密钥文件
+
+可选输入：`LITELLM_MASTER_KEY_FILE`, `LITELLM_OPENAI_API_KEY_FILE`, `LITELLM_ANTHROPIC_API_KEY_FILE`, `LITELLM_GROQ_API_KEY_FILE`, `LITELLM_GEMINI_API_KEY_FILE`, `LITELLM_OLLAMA_API_KEY_FILE`, `LITELLM_MCP_API_KEY_FILE`, `LITELLM_DATABASE_URL_FILE`。每个输入替代对应的直接变量。不要在容器配置或挂载 env 文件中设置对应直接变量，即使是空值也不行。挂载 env 文件保持原有优先级。同时设置两种来源、空路径或无效文件会在写入凭据或配置之前终止启动。
+
+注：若对应直接变量来自 `-e` 或 Compose `environment`，请移除该赋值并重建容器。另一种做法是删除绑定挂载的 `litellm.env` 中的直接赋值，在对应 `_FILE` 变量的赋值前加入相应的 `unset` 命令（例如 `unset LITELLM_MASTER_KEY`），确认容器能看到更新后的文件后重启。此命令适用于由 shell 读取执行的绑定挂载文件；Docker `--env-file` 和 Compose `env_file` 不会执行 shell 命令。容器配置中的旧凭据仍会保留，直到重建容器。
+
+文件必须可读、非空且为普通文件；允许指向普通文件的符号链接，路径可含空格。仅移除末尾的 LF/CRLF 序列；拒绝内部换行、单独 CR、NUL 及其他控制字符。Bearer 令牌仅允许 ASCII 字母、数字及 `-._~+/`，末尾可带 `=` 填充。密码和 URL 保留空格、引号及标点。不会更改源文件权限或所有者。
+
+使用[可选 Compose secret 覆盖文件](examples/compose.secrets.yml)，显式设置 `SECRET_FILE_IMAGE` 为兼容镜像、`SECRET_FILE_PATH` 为主机密钥路径，并移除直接密钥赋值。先合并现有 Compose 文件运行 `config`，检查后仅重建受影响的服务，保留项目名和数据卷。旧镜像可能忽略新输入；本地 CPU 构建方法见[英文说明](../README.md#secret-files)。挂载检查脚本不代表已验证 Podman Compose、Swarm、Kubernetes 或 GPU。
+
+轮换在启动时生效。确认容器能看到新内容后重启，并更新相关客户端使用的凭据；容器环境配置或挂载变更需要重建容器。原子替换主机绑定文件可能保留旧 inode，此时需重建受影响的容器。降级前先配置旧镜像支持的直接或已保存凭据，并验证正确、错误和缺失凭据的受保护请求。保留数据卷和备份。
+
+主密钥仍会写入现有的持久化或共享密钥文件及生成配置。请限制访问并备份这些副本。文件输入不提供加密，也不保证密钥不会出现在进程环境、参数或上游状态中。
+
+主密钥与数据库中的虚拟密钥不同。提供商文件不会自动替换已保存的模型凭据，请使用现有模型管理或配置流程。MCP 配置及 Ollama/MCP 共享回退保持原有启动规则，显式文件优先于共享回退。解析后的数据库 URL 优先于现有 `LITELLM_POSTGRES_PASSWORD_FILE`，两者角色不同，不构成来源冲突；均不会轮换已有数据库密码。数据库和凭据卷应一起备份。
+
+不含密钥的 `.master_key.file-source` 标记使管理命令在文件模式下优先读取启动时生效的已保存密钥，即使 exec 仍继承旧容器变量。启动时会原子替换此标记，退出文件模式时将其清除。
+
 ## 模型管理
 
 使用 `docker exec` 通过 `litellm_manage` 辅助脚本管理模型。模型存储在 Docker 卷内的 `config.yaml` 中，容器重启后仍然保留。

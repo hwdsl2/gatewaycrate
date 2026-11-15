@@ -2,6 +2,17 @@
 
 Notable changes to GatewayCrate are documented here.
 
+## 2026-11-15
+
+### Added
+
+- Accept mounted secret files through `LITELLM_MASTER_KEY_FILE`, `LITELLM_OPENAI_API_KEY_FILE`, `LITELLM_ANTHROPIC_API_KEY_FILE`, `LITELLM_GROQ_API_KEY_FILE`, `LITELLM_GEMINI_API_KEY_FILE`, `LITELLM_OLLAMA_API_KEY_FILE`, `LITELLM_MCP_API_KEY_FILE`, `LITELLM_DATABASE_URL_FILE` with explicit source-conflict and file validation.
+
+### Compatibility
+
+- Rotation applies at startup. Existing direct/generated credentials and volumes remain supported; older images require an older supported credential source.
+- Existing persisted/shared credentials and upstream settings remain in use; file inputs do not automatically rotate saved secondary credentials.
+
 ## 2026-11-05
 
 Release: `2026.11.1`

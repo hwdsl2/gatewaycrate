@@ -160,6 +160,32 @@ docker run \
 
 The env file is bind-mounted into the container, so changes are picked up on every restart without recreating the container.
 
+## Secret files
+
+Supported optional inputs: `LITELLM_MASTER_KEY_FILE`, `LITELLM_OPENAI_API_KEY_FILE`, `LITELLM_ANTHROPIC_API_KEY_FILE`, `LITELLM_GROQ_API_KEY_FILE`, `LITELLM_GEMINI_API_KEY_FILE`, `LITELLM_OLLAMA_API_KEY_FILE`, `LITELLM_MCP_API_KEY_FILE`, `LITELLM_DATABASE_URL_FILE`. Each replaces its matching direct variable. Leave the matching direct variable **unset**; do not assign even an empty value in container configuration or the mounted env file. The mounted env file keeps its existing precedence. Setting both sources, an empty file path or an invalid file stops startup before credential/configuration writes.
+
+**Note:** If the matching direct variable is inherited from `-e` or Compose `environment`, remove its assignment and recreate the container. Alternatively, remove any direct assignment from the bind-mounted `litellm.env`, add the matching `unset` command (for example, `unset LITELLM_MASTER_KEY`) before the `_FILE` assignment, and restart once the updated file is visible. This command works in the shell-sourced bind-mounted file; Docker `--env-file` and Compose `env_file` do not execute shell commands. The workaround leaves the old credential in the container configuration until recreation.
+
+Use a readable, nonempty regular file (a symlink to one is accepted). Paths may contain spaces. Only terminal LF/CRLF sequences are removed; embedded line breaks, lone CR, NUL and other controls are rejected. Bearer tokens may contain ASCII letters, digits and `-._~+/`, with optional trailing `=` padding. Password/URL inputs retain spaces, quotes and punctuation. External permissions and ownership are unchanged.
+
+See the [opt-in Compose-secret override](docs/examples/compose.secrets.yml). For a local CPU candidate, build the current checkout, then merge the override with your existing configuration:
+
+```bash
+docker build -t gatewaycrate:secret-files-candidate .
+SECRET_FILE_IMAGE=gatewaycrate:secret-files-candidate SECRET_FILE_PATH=/absolute/path/to/api-key \
+  docker compose -f docker-compose.yml -f docs/examples/compose.secrets.yml config
+```
+
+Review the merged configuration before starting only the affected service with the same project, volumes and file arguments. Remove its direct-key assignment first. Older published images may ignore these inputs; select an image containing this implementation. Compose and Podman mounting checks are provided for candidate validation; this source change alone does not establish Podman Compose, Swarm, Kubernetes or GPU validation.
+
+Rotation is startup-based. After making new contents visible, restart the affected container and refresh credential consumers. Changing the container's environment configuration or mounts requires recreation. Atomic replacement of a bind-mounted host file can leave the old inode mounted; verify visibility and recreate the affected container if needed. Keep persistent volumes and backups. Before downgrading, configure a direct/saved credential supported by the older image and verify protected requests with correct, wrong and missing credentials.
+
+Primary keys still reach existing persisted/shared key files and generated configuration. Back up and restrict those copies. File input does not provide encryption or remove secrets from process environments, arguments or upstream state.
+
+The master key is distinct from database-backed virtual keys. Provider inputs do not automatically replace saved model credentials; use the documented model-management/configuration procedure. MCP configuration and shared Ollama/MCP fallbacks keep their existing startup rules; an explicit file wins over a shared fallback. A resolved database URL overrides the existing `LITELLM_POSTGRES_PASSWORD_FILE` path; these are different roles, not conflicting sources. Neither input rotates an existing database password. Back up database and credential volumes together.
+
+The non-secret `.master_key.file-source` marker makes management helpers prefer the active saved key in file mode, even when exec inherits an older container variable. Startup atomically replaces this marker or clears it when file mode ends.
+
 ## Model management
 
 Use `docker exec` to manage models with the `litellm_manage` helper script. Models are stored in `config.yaml` inside the Docker volume and persist across container restarts.

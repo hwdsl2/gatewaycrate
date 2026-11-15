@@ -158,6 +158,26 @@ docker run \
 
 env 檔案以綁定掛載方式掛載到容器中，因此每次重新啟動容器時都會讀取最新的變數，無需重新建立容器。
 
+<a id="secret-files"></a>
+
+## 金鑰檔案
+
+可選輸入：`LITELLM_MASTER_KEY_FILE`, `LITELLM_OPENAI_API_KEY_FILE`, `LITELLM_ANTHROPIC_API_KEY_FILE`, `LITELLM_GROQ_API_KEY_FILE`, `LITELLM_GEMINI_API_KEY_FILE`, `LITELLM_OLLAMA_API_KEY_FILE`, `LITELLM_MCP_API_KEY_FILE`, `LITELLM_DATABASE_URL_FILE`。每個輸入取代對應的直接變數。不要在容器設定或掛載 env 檔案中設定對應直接變數，即使是空值也不行。掛載 env 檔案保持原有優先順序。同時設定兩種來源、空路徑或無效檔案會在寫入憑證或設定之前終止啟動。
+
+注：若對應直接變數來自 `-e` 或 Compose `environment`，請移除該賦值並重建容器。另一種做法是刪除繫結掛載的 `litellm.env` 中的直接賦值，在對應 `_FILE` 變數的賦值前加入相應的 `unset` 命令（例如 `unset LITELLM_MASTER_KEY`），確認容器能看到更新後的檔案再重新啟動。此命令適用於由 shell 讀取執行的繫結掛載檔案；Docker `--env-file` 和 Compose `env_file` 不會執行 shell 命令。容器設定中的舊憑證仍會保留，直到重建容器。
+
+檔案必須可讀、非空且為一般檔案；允許指向一般檔案的符號連結，路徑可含空格。僅移除結尾的 LF/CRLF 序列；拒絕內部換行、單獨 CR、NUL 及其他控制字元。Bearer 權杖僅允許 ASCII 字母、數字及 `-._~+/`，結尾可帶 `=` 填補字元。密碼和 URL 保留空格、引號及標點。不會變更來源檔案權限或擁有者。
+
+使用[可選 Compose secret 覆寫檔案](examples/compose.secrets.yml)，明確設定 `SECRET_FILE_IMAGE` 為相容映像檔、`SECRET_FILE_PATH` 為主機金鑰路徑，並移除直接金鑰賦值。先合併現有 Compose 檔案執行 `config`，檢查後僅重建受影響的服務，保留專案名稱和資料卷。舊映像檔可能忽略新輸入；本機 CPU 建置方法見[英文說明](../README.md#secret-files)。掛載檢查腳本不代表已驗證 Podman Compose、Swarm、Kubernetes 或 GPU。
+
+輪換在啟動時生效。確認容器能看到新內容後重新啟動，並更新相關用戶端使用的憑證；容器環境設定或掛載變更需要重建容器。原子替換主機繫結檔案可能保留舊 inode，此時需重建受影響的容器。降級前先設定舊映像檔支援的直接或已儲存憑證，並驗證正確、錯誤和缺少憑證的受保護請求。保留資料卷和備份。
+
+主金鑰仍會寫入現有的持久化或共用金鑰檔案及產生的設定。請限制存取並備份這些副本。檔案輸入不提供加密，也不保證金鑰不會出現在程序環境、參數或上游狀態中。
+
+主金鑰與資料庫中的虛擬金鑰不同。供應商檔案不會自動取代已儲存的模型憑證，請使用現有模型管理或設定流程。MCP 設定及 Ollama/MCP 共用後備值保持原有啟動規則，明確的檔案優先於共用後備值。解析後的資料庫 URL 優先於現有 `LITELLM_POSTGRES_PASSWORD_FILE`，兩者角色不同，不構成來源衝突；均不會輪換既有資料庫密碼。資料庫和憑證卷應一起備份。
+
+不含金鑰的 `.master_key.file-source` 標記使管理命令在檔案模式下優先讀取啟動時生效的已儲存金鑰，即使 exec 仍繼承舊容器變數。啟動時會原子替換此標記，退出檔案模式時將其清除。
+
 ## 模型管理
 
 使用 `docker exec` 透過 `litellm_manage` 輔助腳本管理模型。模型儲存在 Docker 磁碟區內的 `config.yaml` 中，容器重新啟動後仍然保留。
