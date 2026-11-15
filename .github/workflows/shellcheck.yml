@@ -30,3 +30,5 @@ jobs:
           shopt -s globstar
           ls -ld -- **/*.sh
           shellcheck **/*.sh
+      - name: Check HTTP authentication probe
+        run: python3 -B -I .github/workflows/tests/test_proxy_auth.py -v

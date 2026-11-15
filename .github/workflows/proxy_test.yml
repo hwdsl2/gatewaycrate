@@ -104,12 +104,8 @@ jobs:
           MASTER_KEY=$(docker exec litellm cat /etc/litellm/.master_key)
 
           # Verify auth and OpenAI-compatible endpoint through the published compose port.
-          http_code=$(curl -s -o /dev/null -w '%{http_code}' \
-            http://127.0.0.1:4000/v1/models 2>/dev/null || true)
-          [ "$http_code" = "401" ] || { echo "Expected 401 without key, got $http_code"; exit 1; }
-
-          curl -sf http://127.0.0.1:4000/v1/models \
-            -H "Authorization: Bearer $MASTER_KEY"
+          docker exec litellm litellm_manage --getkey \
+            | python3 -B -I .github/workflows/tests/check_proxy_auth.py
 
           # Verify management commands see the running database-backed proxy.
           docker exec litellm litellm_manage --showkey
@@ -292,18 +288,9 @@ jobs:
               || { echo "Pre-set master key not used"; exit 1; }
           fi
 
-          # Verify auth is enforced: request without key should return 401
-          http_code=$(curl -s -o /dev/null -w '%{http_code}' \
-            http://127.0.0.1:4000/v1/models 2>/dev/null || true)
-          [ "$http_code" = "401" ] || { echo "Expected 401 without key, got $http_code"; exit 1; }
-
-          http_code=$(curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer sk-synthetic-wrong-key' \
-            http://127.0.0.1:4000/v1/models 2>/dev/null || true)
-          [ "$http_code" = "401" ] || { echo "Wrong master key was accepted"; exit 1; }
-
-          # Test OpenAI-compatible models endpoint
-          docker exec "$TEST_ID" curl -sf http://127.0.0.1:4000/v1/models \
-            -H "Authorization: Bearer $MASTER_KEY"
+          # Verify missing/wrong keys are denied and the active key can list models.
+          docker exec "$TEST_ID" litellm_manage --getkey \
+            | python3 -B -I .github/workflows/tests/check_proxy_auth.py
 
           # Test /health/readiness endpoint
           docker exec "$TEST_ID" curl -sf http://127.0.0.1:4000/health/readiness
