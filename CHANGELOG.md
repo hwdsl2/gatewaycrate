@@ -4,6 +4,8 @@ Notable changes to GatewayCrate are documented here.
 
 ## 2026-11-15
 
+Release: `2026.11.2`
+
 ### Added
 
 - Accept mounted secret files through `LITELLM_MASTER_KEY_FILE`, `LITELLM_OPENAI_API_KEY_FILE`, `LITELLM_ANTHROPIC_API_KEY_FILE`, `LITELLM_GROQ_API_KEY_FILE`, `LITELLM_GEMINI_API_KEY_FILE`, `LITELLM_OLLAMA_API_KEY_FILE`, `LITELLM_MCP_API_KEY_FILE`, `LITELLM_DATABASE_URL_FILE` with explicit source-conflict and file validation.
